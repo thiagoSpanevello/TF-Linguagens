@@ -81,4 +81,4 @@ toKeyword "head"     = TokHead
 toKeyword "tail"     = TokTail
 toKeyword "true"     = TokBool True
 toKeyword "false"    = TokBool False
-toKeyword word       = TokId word
+toKeyword word       = error ("Erro lexico: palavra desconhecida: " ++ word)

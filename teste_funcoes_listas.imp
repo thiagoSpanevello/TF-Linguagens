@@ -7,6 +7,7 @@ func $fat($n) {
   }
 };
 call $fat(5);
+resultado := 0;
 $resultado := $ret;
 $lista := [$resultado, $resultado / 10, $resultado / 20];
 $cabeca := head($lista);
