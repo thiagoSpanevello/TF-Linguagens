@@ -14,8 +14,12 @@ data Token
   | TokAtrib | TokPontoVirgula
   | TokAbreCh | TokFechaCh
   | TokAbrePar | TokFechaPar
-  -- Palavras-chave
+  | TokAbreCol | TokFechaCol   -- [ ]
+  | TokVirgula                 -- ,
+  -- Palavras-chave base
   | TokSe | TokEntao | TokSenao | TokEnquanto | TokFaca
+  -- Palavras-chave extras (funções e listas)  
+  | TokFunc | TokCall | TokHead | TokTail
   deriving (Show, Eq)
 
 lexer :: String -> [Token]
@@ -34,14 +38,17 @@ lexer (c:cs)
   | c == '}'     = TokFechaCh      : lexer cs
   | c == '('     = TokAbrePar      : lexer cs
   | c == ')'     = TokFechaPar     : lexer cs
+  | c == '['     = TokAbreCol      : lexer cs
+  | c == ']'     = TokFechaCol     : lexer cs
+  | c == ','     = TokVirgula      : lexer cs
   | c == '<'     = case cs of
-      ('>':rest) -> TokIgual : lexer rest  -- <>
-      ('<':'>':rest) -> TokMenorIg : lexer rest  -- <<>
-      _          -> TokMenor   : lexer cs    -- 
+      ('>':rest)      -> TokIgual   : lexer rest  -- <>
+      ('<':'>':rest)  -> TokMenorIg : lexer rest  -- <<>
+      _               -> TokMenor   : lexer cs
   | c == '>'     = case cs of
-      ('<':rest) -> TokDif : lexer rest  -- <>
-      ('<':'>':rest) -> TokMaiorIg : lexer rest  -- <<>
-      _          -> TokMaior   : lexer cs    -- >
+      ('<':'>':rest)  -> TokMaiorIg : lexer rest  -- ><>
+      ('<':rest)      -> TokDif     : lexer rest  -- ><
+      _               -> TokMaior   : lexer cs
   | c == ':'     = case cs of
       ('=':rest) -> TokAtrib : lexer rest  -- :=
       _          -> error "Erro léxico: ':' isolado, use ':='"
@@ -68,6 +75,10 @@ toKeyword "entao"    = TokEntao
 toKeyword "senao"    = TokSenao
 toKeyword "enquanto" = TokEnquanto
 toKeyword "faca"     = TokFaca
+toKeyword "func"     = TokFunc
+toKeyword "call"     = TokCall
+toKeyword "head"     = TokHead
+toKeyword "tail"     = TokTail
 toKeyword "true"     = TokBool True
 toKeyword "false"    = TokBool False
 toKeyword word       = TokId word

@@ -1,0 +1,14 @@
+$x := 10;
+$y := 3;
+$soma := $x + $y;
+$dif  := $x - $y;
+$prod := $x * $y;
+$div  := $x / $y;
+$maior := false;
+se $x > $y entao { $maior := true } senao { $maior := false };
+$cont := 0;
+$acc  := 0;
+enquanto $cont < 5 faca {
+  $acc  := $acc + $cont;
+  $cont := $cont + 1
+}
