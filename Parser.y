@@ -49,37 +49,28 @@ import Lexer
 
 %%
 
--- Ponto de entrada
 Prog : Stmt                              { $1 }
 
--- Comandos
 Stmt : Stmt ';' Stmt                     { Seq $1 $3 }
      | id ':=' Exp                       { Atrib $1 $3 }
      | se Exp entao '{' Stmt '}'
          senao '{' Stmt '}'             { Se $2 $5 $9 }
      | enquanto Exp faca '{' Stmt '}'   { Enquanto $2 $5 }
-     -- Declaração de função
      | func id '(' Params ')' '{' Stmt '}'
                                          { FuncDecl $2 $4 $7 }
-     -- Chamada de procedimento
      | call id '(' Args ')'             { Call $2 $4 }
-     -- Construção de lista
      | id ':=' '[' Args ']'             { ListaDecl $1 $4 }
-     -- head e tail como comandos
      | id ':=' head '(' Exp ')'         { HeadCmd $1 $5 }
      | id ':=' tail '(' Exp ')'         { TailCmd $1 $5 }
 
--- Lista de parâmetros formais (nomes)
 Params :                                 { [] }
        | id                              { [$1] }
        | Params ',' id                   { $1 ++ [$3] }
 
--- Lista de argumentos (expressões)
 Args :                                   { [] }
      | Exp                               { [$1] }
      | Args ',' Exp                      { $1 ++ [$3] }
 
--- Expressões
 Exp : Exp '+' Exp                        { BinOp Soma $1 $3 }
     | Exp '-' Exp                        { BinOp Sub  $1 $3 }
     | Exp '*' Exp                        { BinOp Mult $1 $3 }
@@ -99,20 +90,17 @@ Exp : Exp '+' Exp                        { BinOp Soma $1 $3 }
 parseError :: [Token] -> a
 parseError toks = error ("Erro sintático: " ++ show toks)
 
--- ===========================================================
--- AST – Árvore de Sintaxe Abstrata (estendida)
--- ===========================================================
 data Stmt
-  = Atrib    String Exp           -- id := Exp
-  | Seq      Stmt   Stmt          -- S1 ; S2
-  | Se       Exp    Stmt  Stmt    -- se E entao {S} senao {S}
-  | Enquanto Exp    Stmt          -- enquanto E faca {S}
-  -- Funcionalidades Extra
-  | FuncDecl String [String] Stmt -- func id(p1,..) { S }
-  | Call     String [Exp]         -- call id(e1,..)
-  | ListaDecl String [Exp]        -- id := [e1, e2, ...]
-  | HeadCmd  String Exp           -- id := head(lista)
-  | TailCmd  String Exp           -- id := tail(lista)
+  = Atrib    String Exp           
+  | Seq      Stmt   Stmt          
+  | Se       Exp    Stmt  Stmt    
+  | Enquanto Exp    Stmt          
+
+  | FuncDecl String [String] Stmt 
+  | Call     String [Exp]        
+  | ListaDecl String [Exp]        
+  | HeadCmd  String Exp          
+  | TailCmd  String Exp           
   deriving (Show, Eq)
 
 data Exp
