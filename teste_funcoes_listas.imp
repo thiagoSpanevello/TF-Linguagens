@@ -1,5 +1,5 @@
 func $fat($n) {
-  se $n <<> 2 entao {
+  se $n <<> 1 entao {
     $ret := 1
   } senao {
     call $fat($n - 1);
