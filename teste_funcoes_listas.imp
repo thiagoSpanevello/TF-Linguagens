@@ -8,6 +8,6 @@ func $fat($n) {
 };
 call $fat(5);
 $resultado := $ret;
-$lista := [$resultado, 10, 20];
+$lista := [$resultado, $resultado / 10, $resultado / 20];
 $cabeca := head($lista);
 $cauda  := tail($lista)
