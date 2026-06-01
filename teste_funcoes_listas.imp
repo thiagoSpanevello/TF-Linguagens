@@ -2,13 +2,10 @@ func $fat($n) {
   se $n <<> 1 entao {
     $ret := 1
   } senao {
-    call $fat($n - 1);
-    $ret := $n * $ret
+    $ret := $n * call $fat($n - 1)
   }
 };
-call $fat(5);
-resultado := 0;
-$resultado := $ret;
+$resultado := call $fat(5);
 $lista := [$resultado, $resultado / 10, $resultado / 20];
 $cabeca := head($lista);
 $cauda  := tail($lista)

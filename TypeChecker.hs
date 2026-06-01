@@ -38,6 +38,22 @@ inferExp st (BinOp op e1 e2) =
       t2 = inferExp st e2
   in checkOp op t1 t2
 
+inferExp st (Call nome args) =
+  case Map.lookup nome (funcTipos st) of
+    Nothing -> error ("Type error: função não declarada: " ++ nome)
+    Just (paramTs, retT) ->
+      let nParams = length paramTs
+          nArgs   = length args
+      in if nParams /= nArgs
+         then error ("Type error: função " ++ nome
+                     ++ " espera " ++ show nParams
+                     ++ " argumento(s), recebeu " ++ show nArgs)
+         else let argTs = map (inferExp st) args
+                  mismatches = filter (uncurry (/=)) (zip paramTs argTs)
+              in if not (null mismatches)
+                 then error ("Type error: tipos de argumentos incorretos em chamada de " ++ nome)
+                 else retT
+
 checkOp :: Op -> Tipo -> Tipo -> Tipo
 
 checkOp Soma  TInt TInt = TInt
@@ -91,22 +107,6 @@ checkStmt st (FuncDecl nome params corpo) =
       _          = checkStmt localSt corpo
       newFuncTipos = Map.insert nome (map snd paramTipos, TInt) (funcTipos st)
   in st { funcTipos = newFuncTipos }
-
-checkStmt st (Call nome args) =
-  case Map.lookup nome (funcTipos st) of
-    Nothing -> error ("Type error: função não declarada: " ++ nome)
-    Just (paramTs, retT) ->
-      let nParams = length paramTs
-          nArgs   = length args
-      in if nParams /= nArgs
-         then error ("Type error: função " ++ nome
-                     ++ " espera " ++ show nParams
-                     ++ " argumento(s), recebeu " ++ show nArgs)
-         else let argTs = map (inferExp st) args
-                  mismatches = filter (uncurry (/=)) (zip paramTs argTs)
-              in if not (null mismatches)
-                 then error ("Type error: tipos de argumentos incorretos em chamada de " ++ nome)
-                 else st { varTipos = Map.insert "$ret" retT (varTipos st) }
 
 checkStmt st (ListaDecl x exprs) =
   let ts = map (inferExp st) exprs

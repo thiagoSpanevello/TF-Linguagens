@@ -30,20 +30,35 @@ data State = State
 emptyState :: State
 emptyState = State Map.empty Map.empty
 
-eval :: State -> Exp -> RuntimeVal
+eval :: State -> Exp -> (RuntimeVal, State)
 
-eval _ (Lit (VInt  n)) = RInt  n
-eval _ (Lit (VBool b)) = RBool b
+eval st (Lit (VInt  n)) = (RInt n, st)
+eval st (Lit (VBool b)) = (RBool b, st)
 
 eval st (Var x) =
   case Map.lookup x (varEnv st) of
-    Just v  -> v
+    Just v  -> (v, st)
     Nothing -> error ("variavel nao declarada: " ++ x)
 
 eval st (BinOp op e1 e2) =
-  let v1 = eval st e1
-      v2 = eval st e2
-  in applyOp op v1 v2
+  let (v1, st1) = eval st e1
+      (v2, st2) = eval st1 e2
+  in (applyOp op v1 v2, st2)
+
+eval st (Call nome args) =
+  case Map.lookup nome (funcEnv st) of
+    Nothing -> error ("Função não declarada: " ++ nome)
+    Just (params, corpo) ->
+      let (argVals, st1) = foldr (\arg (vals, s) -> 
+                                    let (v, s') = eval s arg
+                                    in (v:vals, s')) ([], st) args
+          localEnv  = Map.fromList (zip params argVals)
+          localState = State localEnv (funcEnv st1)
+          finalState = exec localState corpo
+          retVal = Map.lookup "$ret" (varEnv finalState)
+      in case retVal of
+           Just v  -> (v, st1 { varEnv = Map.insert "$ret" v (varEnv st1) })
+           Nothing -> error ("Função " ++ nome ++ " não retornou valor")
 
 applyOp :: Op -> RuntimeVal -> RuntimeVal -> RuntimeVal
 
@@ -73,58 +88,50 @@ applyOp op v1 v2 =
 exec :: State -> Stmt -> State
 
 exec st (Atrib x e) =
-  let v = eval st e
-  in st { varEnv = Map.insert x v (varEnv st) }
+  let (v, st') = eval st e
+  in st' { varEnv = Map.insert x v (varEnv st') }
 
 exec st (Seq s1 s2) =
   let st' = exec st s1
   in exec st' s2
 
 exec st (Se cond sThen sSenao) =
-  case eval st cond of
-    RBool True  -> exec st sThen
-    RBool False -> exec st sSenao
+  let (condVal, st') = eval st cond
+  in case condVal of
+    RBool True  -> exec st' sThen
+    RBool False -> exec st' sSenao
     _           -> error "Condição do 'se' deve ser booleana"
 
 exec st (Enquanto cond corpo) =
-  case eval st cond of
-    RBool False -> st
+  let (condVal, st') = eval st cond
+  in case condVal of
+    RBool False -> st'
     RBool True  ->
-      let st' = exec st corpo
-      in exec st' (Enquanto cond corpo)
+      let st'' = exec st' corpo
+      in exec st'' (Enquanto cond corpo)
     _ -> error "Condição do 'enquanto' deve ser booleana"
 
 exec st (FuncDecl nome params corpo) =
   st { funcEnv = Map.insert nome (params, corpo) (funcEnv st) }
 
-exec st (Call nome args) =
-  case Map.lookup nome (funcEnv st) of
-    Nothing -> error ("Função não declarada: " ++ nome)
-    Just (params, corpo) ->
-      let argVals   = map (eval st) args
-          localEnv  = Map.fromList (zip params argVals)
-          localState = State localEnv (funcEnv st)
-          finalState = exec localState corpo
-          retVal = Map.lookup "$ret" (varEnv finalState)
-          outerEnv = case retVal of
-                       Just v  -> Map.insert "$ret" v (varEnv st)
-                       Nothing -> varEnv st
-      in st { varEnv = outerEnv }
-
 exec st (ListaDecl x exprs) =
-  let vs = map (eval st) exprs
-  in st { varEnv = Map.insert x (RList vs) (varEnv st) }
+  let (vs, st') = foldr (\expr (vals, s) -> 
+                          let (v, s') = eval s expr
+                          in (v:vals, s')) ([], st) exprs
+  in st' { varEnv = Map.insert x (RList vs) (varEnv st') }
 
 exec st (HeadCmd x listaExp) =
-  case eval st listaExp of
+  let (listaVal, st') = eval st listaExp
+  in case listaVal of
     RList []    -> error "head: lista vazia"
-    RList (v:_) -> st { varEnv = Map.insert x v (varEnv st) }
+    RList (v:_) -> st' { varEnv = Map.insert x v (varEnv st') }
     _           -> error "head: esperava uma lista"
 
 exec st (TailCmd x listaExp) =
-  case eval st listaExp of
+  let (listaVal, st') = eval st listaExp
+  in case listaVal of
     RList []     -> error "tail: lista vazia"
-    RList (_:vs) -> st { varEnv = Map.insert x (RList vs) (varEnv st) }
+    RList (_:vs) -> st' { varEnv = Map.insert x (RList vs) (varEnv st') }
     _            -> error "tail: esperava uma lista"
 
 

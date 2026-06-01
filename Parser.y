@@ -58,7 +58,6 @@ Stmt : Stmt ';' Stmt                     { Seq $1 $3 }
      | enquanto Exp faca '{' Stmt '}'   { Enquanto $2 $5 }
      | func id '(' Params ')' '{' Stmt '}'
                                          { FuncDecl $2 $4 $7 }
-     | call id '(' Args ')'             { Call $2 $4 }
      | id ':=' '[' Args ']'             { ListaDecl $1 $4 }
      | id ':=' head '(' Exp ')'         { HeadCmd $1 $5 }
      | id ':=' tail '(' Exp ')'         { TailCmd $1 $5 }
@@ -85,6 +84,7 @@ Exp : Exp '+' Exp                        { BinOp Soma $1 $3 }
     | num                                { Lit (VInt  $1) }
     | bool                               { Lit (VBool $1) }
     | id                                 { Var $1 }
+    | call id '(' Args ')'               { Call $2 $4 }
 
 {
 parseError :: [Token] -> a
@@ -97,7 +97,6 @@ data Stmt
   | Enquanto Exp    Stmt          
 
   | FuncDecl String [String] Stmt 
-  | Call     String [Exp]        
   | ListaDecl String [Exp]        
   | HeadCmd  String Exp          
   | TailCmd  String Exp           
@@ -107,6 +106,7 @@ data Exp
   = Lit   Valor
   | Var   String
   | BinOp Op Exp Exp
+  | Call  String [Exp]
   deriving (Show, Eq)
 
 data Valor
