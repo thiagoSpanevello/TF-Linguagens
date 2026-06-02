@@ -12,6 +12,10 @@ main = do
   let tokens  = lexer src
   let ast     = parser tokens
 
+  putStrLn "=== AST ==="
+  putStrLn (show ast)
+  putStrLn ""
+
   let tcState = checkStmt emptyTCState ast
   putStrLn "=== Tipos inferidos ==="
   mapM_ (\(k, t) -> putStrLn ("  " ++ k ++ " : " ++ show t))
